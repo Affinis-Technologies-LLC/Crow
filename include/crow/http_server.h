@@ -79,8 +79,22 @@ namespace crow // NOTE: Already documented in "crow/app.h"
                 CROW_LOG_ERROR << "Failed to set socket option: " << ec.message();
                 startup_failed_ = true;
                 return;
-            }
-
+            }// ---- add reuse‐port here ----
+          #if defined(SO_REUSEPORT)
+          {
+              int on = 1;
+                if (::setsockopt(
+                       acceptor_.native_handle(),
+                       SOL_SOCKET,
+                       SO_REUSEPORT,
+                       &on,
+                       sizeof(on)) < 0) {
+                    CROW_LOG_ERROR << "Failed to set SO_REUSEPORT: " << strerror(errno);
+                    startup_failed_ = true;
+                    return;
+                }
+          }
+           #endif
             acceptor_.bind(endpoint, ec);
             if (ec) {
                 CROW_LOG_ERROR << "Failed to bind to " << endpoint.address().to_string()
